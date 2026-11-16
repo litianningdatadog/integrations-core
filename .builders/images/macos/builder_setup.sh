@@ -20,7 +20,7 @@ install-from-source() {
 # renovate: datasource=github-releases depName=rust-lang/rust
 RUST_VERSION="1.99.1"
 # renovate: datasource=github-tags depName=rust-lang/rustup
-RUSTUP_VERSION="1.29.2"
+RUSTUP_VERSION="1.29.3"
 case "$(uname -m)" in
     x86_64)
         RUST_TARGET="x86_64-apple-darwin"
