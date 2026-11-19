@@ -52,6 +52,9 @@ WORKFLOW_JOBS_PER_PAGE = 50
 # GitHub can answer 404 while a resource is becoming visible after a successful mutation.
 SAFE_RETRY_WITH_404 = SAFE_RETRY.also_on(on_status(404))
 
+# GitHub can take a few seconds to make a dispatched run visible (AI-7574).
+NEW_WORKFLOW_RUN_RETRY = SAFE_RETRY_WITH_404.replace(attempts=8)
+
 
 class JobListTooLargeError(Exception):
     """Raised when a batch's inputs exceed what a workflow dispatch accepts.
@@ -360,13 +363,14 @@ class TaskTestRunner(AsyncProcessor[TestBatch]):
         previous_poll: float | None = None
         while True:
             poll_started = monotonic()
+            retry = NEW_WORKFLOW_RUN_RETRY if previous_poll is None else SAFE_RETRY_WITH_404
             if previous_poll is not None:
                 self.monitor.metrics.distribution('requests.polling_interval', poll_started - previous_poll)
             previous_poll = poll_started
             with self._metrics.operation(Operation.FETCH_WORKFLOW) as op:
                 try:
                     run = await self._client.get_workflow_run(
-                        self._options.owner, self._options.repo, run_id, retry=SAFE_RETRY_WITH_404
+                        self._options.owner, self._options.repo, run_id, retry=retry
                     )
                 except ValidationError as error:
                     raise self._response_failure(
