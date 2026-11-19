@@ -11,7 +11,7 @@ import yaml
 import ddev.ai.agent.anthropic_provider as anthropic_provider
 from ddev.ai.agent.anthropic_agent import DEFAULT_MAX_TOKENS
 from ddev.ai.agent.anthropic_provider import (
-    GATEWAY_EXECUTION_PENDING,
+    GATEWAY_RUNTIME_REQUIRED,
     AnthropicProvider,
 )
 from ddev.ai.agent.registry import AgentProviderRegistry
@@ -164,7 +164,7 @@ def test_gateway_build_agent_fails_before_any_request(monkeypatch: pytest.Monkey
     monkeypatch.setattr(anthropic_provider.anthropic, "AsyncAnthropic", client_factory)
     provider = AnthropicProvider(None, route=Route.AI_GATEWAY, resolver=make_resolver(tmp_path, make_entry()))
 
-    with pytest.raises(ValueError, match=GATEWAY_EXECUTION_PENDING):
+    with pytest.raises(ValueError, match=GATEWAY_RUNTIME_REQUIRED):
         provider.build_agent(
             make_agent_config(model="fixture-model"),
             tools=MagicMock(spec=ToolRegistry),

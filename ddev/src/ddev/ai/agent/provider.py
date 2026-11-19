@@ -4,11 +4,23 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
 
 from ddev.ai.agent.base import BaseAgent
 from ddev.ai.config.models import AgentConfig
 from ddev.ai.tools.registry import ToolRegistry
+
+if TYPE_CHECKING:
+    from ddev.ai.model_catalog import Route
+    from ddev.ai.runtime.tokens import TokenProducer
+
+
+class ModelAccessCheck(NamedTuple):
+    """Startup probe status and whether the response named the requested model."""
+
+    status: int
+    requested_model: str
+    model_confirmed: bool
 
 
 class AgentProvider(Protocol):
@@ -23,6 +35,18 @@ class AgentProvider(Protocol):
         ...
 
     def validate_config(self, agent_config: AgentConfig): ...
+
+    def for_run(self, route: Route, tokens: TokenProducer) -> AgentProvider:
+        """Bind the adapter to a run without changing the configuration registry."""
+        ...
+
+    async def check_access(self, agent_config: AgentConfig) -> ModelAccessCheck:
+        """Probe the configured model through the Gateway before phases start."""
+        ...
+
+    async def close(self) -> None:
+        """Release resources opened by the run-bound adapter."""
+        ...
 
     def build_agent(
         self,

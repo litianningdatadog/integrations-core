@@ -28,7 +28,7 @@ from ddev.ai.agent.types import (
     WebFetchCall,
     WebSearchCall,
 )
-from ddev.ai.model_catalog import ResolvedModel
+from ddev.ai.model_catalog import ResolvedModel, Route
 from ddev.ai.tools.registry import ToolRegistry
 
 if TYPE_CHECKING:
@@ -423,6 +423,10 @@ class AnthropicAgent(BaseAgent[MessageParam]):
                 tool_defs=tool_defs,
             )
         except anthropic.APIConnectionError as e:
+            if self._model.route is Route.AI_GATEWAY:
+                if isinstance(e.__cause__, AgentError):
+                    raise e.__cause__ from None
+                raise AgentConnectionError("AI Gateway connection failed.") from None
             raise AgentConnectionError(f"Connection failed: {e}") from e
         except anthropic.RateLimitError as e:
             raise AgentRateLimitError(f"Rate limit exceeded: {e}") from e
